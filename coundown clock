@@ -3,6 +3,7 @@ from tkinter import ttk
 import time
 import platform
 
+# Use winsound only on Windows for notification beep
 if platform.system() == "Windows":
     import winsound
 else:
@@ -14,6 +15,7 @@ class StudyTimerApp:
         self.root.title("Study Timer")
         self.root.geometry("400x300")
 
+        # Timer settings and state variables
         self.study_time = tk.IntVar(value=25)
         self.break_time = tk.IntVar(value=5)
         self.remaining_time = 0
@@ -25,13 +27,17 @@ class StudyTimerApp:
         self.elapsed_time = 0
         self.last_ring_time = 0
 
-        self.setup_ui()
+        self.setup_ui()  # Build the user interface
 
     def setup_ui(self):
+        # Display for countdown timer
         tk.Label(self.root, text="00:00:00", font=("Helvetica", 48), name="timer").pack(pady=10)
+
+        # Progress bar for visual tracking
         self.progress = ttk.Progressbar(self.root, length=250, mode='determinate')
         self.progress.pack()
 
+        # Start, Pause, Resume, Reset buttons
         control_frame = tk.Frame(self.root)
         control_frame.pack(pady=10)
         for i, (txt, cmd) in enumerate([
@@ -41,6 +47,7 @@ class StudyTimerApp:
             ("Reset", self.reset_timer)]):
             tk.Button(control_frame, text=txt, command=cmd).grid(row=0, column=i, padx=3)
 
+        # Input fields for study/break time
         settings = tk.Frame(self.root)
         settings.pack()
         tk.Label(settings, text="Study (min):").grid(row=0, column=0)
@@ -48,13 +55,16 @@ class StudyTimerApp:
         tk.Label(settings, text="Break (min):").grid(row=0, column=2)
         tk.Entry(settings, textvariable=self.break_time, width=5).grid(row=0, column=3)
 
+        # Display for number of completed sessions
         self.session_label = tk.Label(self.root, text="Sessions Completed: 0", font=("Helvetica", 12))
         self.session_label.pack(pady=10)
 
     def get_timer_label(self):
+        # Access the main timer label using its name
         return self.root.nametowidget("timer")
 
     def update_display(self):
+        # Update countdown timer and progress bar
         h, r = divmod(self.remaining_time, 3600)
         m, s = divmod(r, 60)
         self.get_timer_label().config(text=f"{h:02}:{m:02}:{s:02}")
@@ -62,6 +72,7 @@ class StudyTimerApp:
             self.progress['value'] = (self.total_time - self.remaining_time) / self.total_time * 100
 
     def start_timer(self):
+        # Start a new study session
         if not self.is_running and not self.is_paused:
             self.total_time = self.study_time.get() * 60
             self.remaining_time = self.total_time
@@ -70,39 +81,48 @@ class StudyTimerApp:
             self.run_timer()
 
     def run_timer(self):
+        # Countdown logic
         if self.is_running:
             if self.remaining_time > 0:
                 self.remaining_time -= 1
                 self.elapsed_time += 1
                 self.update_display()
 
+                # Ring sound every 10 minutes
                 if self.elapsed_time - self.last_ring_time >= 600:
                     if winsound:
                         winsound.Beep(1000, 200)
                         winsound.Beep(1200, 200)
                     self.last_ring_time = self.elapsed_time
 
+                # Repeat every second
                 self.root.after(1000, self.run_timer)
             else:
+                # Switch between study and break sessions
                 self.total_time = (self.break_time if self.is_study_session else self.study_time).get() * 60
                 self.remaining_time = self.total_time
+
                 if not self.is_study_session:
                     self.session_count += 1
                     self.session_label.config(text=f"Sessions Completed: {self.session_count}")
+
                 self.is_study_session = not self.is_study_session
                 self.run_timer()
 
     def pause_timer(self):
+        # Pause the timer
         self.is_running = False
         self.is_paused = True
 
     def resume_timer(self):
+        # Resume from pause
         if self.is_paused:
             self.is_running = True
             self.is_paused = False
             self.run_timer()
 
     def reset_timer(self):
+        # Reset everything to initial state
         self.is_running = False
         self.is_paused = False
         self.remaining_time = 0
@@ -113,6 +133,7 @@ class StudyTimerApp:
         self.progress['value'] = 0
         self.session_label.config(text="Sessions Completed: 0")
 
+# Launch the app
 if __name__ == "__main__":
     root = tk.Tk()
     app = StudyTimerApp(root)
